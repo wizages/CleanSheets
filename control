@@ -1,0 +1,9 @@
+Package: com.wizages.popover8
+Name: Popover8
+Depends: mobilesubstrate
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: An awesome MobileSubstrate tweak!
+Maintainer: wizage
+Author: wizage
+Section: Tweaks

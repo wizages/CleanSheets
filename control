@@ -1,9 +1,9 @@
-Package: com.wizages.popover8
-Name: Popover8
+Package: com.wizages.cleansheets
+Name: CleanSheets
 Depends: mobilesubstrate
-Version: 0.0.1
+Version: 0.1.1
 Architecture: iphoneos-arm
-Description: An awesome MobileSubstrate tweak!
-Maintainer: wizage
-Author: wizage
+Description: Changes the action sheets to a alert popup and allows you to customize the alert.
+Maintainer: Wizage <wizagesmax@gmail.com>
+Author: Wizage <wizagesmax@gmail.com>
 Section: Tweaks

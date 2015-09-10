@@ -104,7 +104,7 @@
 -(BOOL)_shouldAlignToKeyboard;
 -(double)_contentVerticalInsets;
 -(id)_containedAlertController;
--(void)setPreferredStyle:(long long)arg1 ;
+-(void)setPreferredStyled:(long long)arg1 ;
 -(void)_addActionWithTitle:(id)arg1 style:(long long)arg2 handler:(/*^block*/id)arg3 shouldDismissHandler:(/*^block*/id)arg4 ;
 -(void)addAction:(id)arg1 ;
 -(void)_updateModalPresentationStyle;

@@ -1,11 +1,15 @@
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = Popover8
-Popover8_FILES = tweak.xm
+TWEAK_NAME = CleanSheets
+CleanSheets_FILES = tweak.xm
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
-Popover8_FRAMEWORKS= UIKIT
+CleanSheets_FRAMEWORKS= UIKIT
+
+
+SUBPROJECTS += pref_clean
+include $(THEOS_MAKE_PATH)/aggregate.mk
 
 after-install::
 	install.exec "killall SpringBoard"

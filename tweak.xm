@@ -12,7 +12,11 @@ static int activityCount = 0; // Array count for activities
 
 /*
 *	This will tell the system that it needs to resize for an activity or not.
+*	Note: Removed or now because it was causing wrong resizing on some alerts
+*		  we will use this later to change the look of alerts hence why it is
+*		  staying
 */
+/*
 + (id)alertControllerWithTitle:(id)arg1 message:(id)arg2 preferredStyle:(int)arg3 {
 
 if (arg3 == 0)
@@ -25,6 +29,7 @@ else {
 %orig;
 return %orig;
 }
+*/
 
 /*
 *	If the menu was supposed to be an actionsheet, it will change it to an alert
@@ -114,7 +119,7 @@ return %orig;
 * 	give the "default" items, which magically fixes the crashes.
 */
 -(UIAlertController *)activityAlertController {
-
+	fullsizeActivity = true;
 	%orig;
 	UIAlertController *alert = %orig;
 	isActivity = true;

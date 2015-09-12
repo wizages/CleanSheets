@@ -2,7 +2,7 @@
 
 static bool fullsizeActivity = false; // Deteremine if they need fullsize or not
 static bool isActivity = false; // Determines if the alert is an activity alert
-static int activityCount = 0; // Array count for activities
+static NSString *activityItem = @""; //Stores the first or secound activity item
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 * Hook into UIAlertControllerVisualStyle																				 *
@@ -40,6 +40,7 @@ return %orig;
 -(long long)preferredStyle {
 	if (!isActivity)
 	{
+		fullsizeActivity = false;
 		return 1;
 	}
 	else{
@@ -67,14 +68,6 @@ return %orig;
 	return true;
 }
 
-/*
-*	Cleans up the variables after the alert is shown so no errors will occur
-*/
--(void)viewDidAppear:(BOOL)arg1{
-	%orig;
-	isActivity = false;
-	fullsizeActivity = false;
-}
 
 %end
 
@@ -102,21 +95,35 @@ return %orig;
 %hook UIActivityViewController
 
 /*
-*	Gets array count of UIActivity because some people suck at coding
+*	Gets array count of UIActivity then takes a look at the first entry and secound
+*	if it exists. If it exists it checks to see if it has a memory address in the 
+*	description. If it does then it will move on and store that activity name.
 */
 -(id)initWithActivityItems:(NSArray *)arg1 applicationActivities:(NSArray *)arg2 
 {
+	activityItem = @"";
 	%orig;
-	activityCount = arg1.count;
+	if(arg1.count >= 1)
+	{
+		activityItem = [arg1[0] description];
+		if ([activityItem rangeOfString:@"0x"].location == NSNotFound 
+		 && arg1.count > 1)
+		{
+			activityItem = [arg1[1] description];
+		}
+	}
 	return %orig;
 }
 
 /*
-*	A hack to change only UIActivityViewContoller alerts, the issue was that some
-* 	app developers do not know how to use UIActivityViewController so they dont
-*	pass an actual value to share until the person choses and opition. So to 
-*	dectect what is going on we decide to not give the style to devs that only
-* 	give the "default" items, which magically fixes the crashes.
+*	Once the activityname is ready to be passed in we will then turn on two switches
+* 	to enable special themeing for the activity controller. After that we look into
+*	see if the first or secound item of the activity items is equal to a UI or Image
+* 	activity item. These items were causing crashes in apps so we had to just tell
+* 	the tweak to not change there style which magically fixes everything. My theory
+* 	behind why it is broken is because someone wrote a library and some companies
+* 	use the same library and they original lib writer didnt know how to code 
+*	Activity Views properly.... (Because all of apples apps are just fine)
 */
 -(UIAlertController *)activityAlertController {
 	fullsizeActivity = true;
@@ -127,14 +134,16 @@ return %orig;
 	{
 		[alert setPreferredStyle: 1];
 	}
-	else if (alert.parentViewController == nil && activityCount == 1){
+	else if (alert.parentViewController == nil 
+		  && ( [activityItem rangeOfString:@"ImageActivityItem"].location != NSNotFound 
+		  	|| [activityItem rangeOfString:@"UIActivityItem"].location != NSNotFound ) ){
 		[alert setPreferredStyle: 0];
 	}
 	else{
 		[alert setPreferredStyle: 1];
 	}
+	isActivity = false;
 	return alert;
-
 }
 
 %end

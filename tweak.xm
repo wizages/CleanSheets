@@ -19,6 +19,8 @@
 static bool fullsizeActivity = false; // Deteremine if they need fullsize or not
 static bool isActivity = false; // Determines if the alert is an activity alert
 static NSString *activityItem = @""; //Stores the first or secound activity item
+static bool seperators = true;
+static bool enabled = true;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 * Hook into UIAlertControllerVisualStyle																				 *
@@ -54,7 +56,7 @@ return %orig;
 *	Note: If it is an activity it should ignore this and follow what is defined below.
 */
 -(long long)preferredStyle {
-	if (!isActivity)
+	if (!isActivity && enabled)
 	{
 		fullsizeActivity = false;
 		return 1;
@@ -69,7 +71,7 @@ return %orig;
 *	This changes the size of the alert to be the correct size. (Add switch here to make all alerts long)
 */
 -(id)visualStyleForAlertControllerStyle:(long long)arg1 traitCollection:(id)arg2 descriptor:(id)arg3{
-	if (fullsizeActivity)
+	if (fullsizeActivity && enabled)
 	{
 	arg1 = 0;
 	}
@@ -81,7 +83,12 @@ return %orig;
 *	Enables background touches to dismass the sheet.
 */
 -(BOOL)_canDismissWithGestureRecognizer {
-	return true;
+	if(enabled)
+		return TRUE;
+	else{
+		%orig;
+		return %orig;
+	}
 }
 
 
@@ -98,7 +105,14 @@ return %orig;
 *	Hides seperators for all the UIAlerts
 */
 -(bool) hideActionSeparators{
-	return true;
+	//bool seperators_hide = (bool) [CleanSheets loadSettings][@"seperators_hide"];
+	//HBLogDebug(@"%ld", (long) seperators_hide);
+	if (enabled)
+		return seperators;
+	else{
+		%orig;
+		return %orig;
+	}
 }
 
 %end
@@ -140,13 +154,19 @@ return %orig;
 * 	behind why it is broken is because someone wrote a library and some companies
 * 	use the same library and they original lib writer didnt know how to code 
 *	Activity Views properly.... (Because all of apples apps are just fine)
+*	Note: Since the photos app uses a special activity controller we dont touch it.
 */
 -(UIAlertController *)activityAlertController {
+	if (enabled){
 	fullsizeActivity = true;
 	%orig;
 	UIAlertController *alert = %orig;
 	isActivity = true;
-	if ([alert.parentViewController isKindOfClass:[UIActivityViewController class]])
+	if ([[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.mobileslideshow"])
+	{
+		//Do nothing for apples photo app
+	}
+	else if ([alert.parentViewController isKindOfClass:[UIActivityViewController class]])
 	{
 		[alert setPreferredStyle: 1];
 	}
@@ -160,7 +180,29 @@ return %orig;
 	}
 	isActivity = false;
 	return alert;
+	}
+	else{
+	%orig;
+	return %orig;
+	}
 }
 
 %end
+
+static void loadPrefs()
+{
+    NSMutableDictionary *prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.wizages.cleansheets.plist"];
+    if(prefs)
+    {
+        seperators = ( [prefs objectForKey:@"seperators_hide"] ? [[prefs objectForKey:@"seperators_hide"] boolValue] : seperators );
+        enabled =  ( [prefs objectForKey:@"enabled"] ? [[prefs objectForKey:@"enabled"] boolValue] :enabled );
+    }
+    [prefs release];
+}
+
+%ctor 
+{
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)loadPrefs, CFSTR("com.wizages.cleansheets/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+    loadPrefs();
+}
 

@@ -1,0 +1,10 @@
+{
+    entry = {
+	bundle = CleanSheets;
+	cell = PSLinkCell;
+	detail = CleanSheetsListController;
+	icon = Icon/CleanSheets.png;
+	isController = 1;
+	label = CleanSheets;
+    };
+}

@@ -17,10 +17,24 @@
 @end
 
 @implementation CleanSheetsListController
+#define tweakPreferencePath @"/User/Library/Preferences/com.wizages.cleansheets.plist"
+-(id) readPreferenceValue:(PSSpecifier*)specifier {
+    NSDictionary *tweakSettings = [NSDictionary dictionaryWithContentsOfFile:tweakPreferencePath];
+    if (!tweakSettings[specifier.properties[@"key"]]) {
+        return specifier.properties[@"default"];
+    }
+    return tweakSettings[specifier.properties[@"key"]];
+}
+ 
+-(void) setPreferenceValue:(id)value specifier:(PSSpecifier*)specifier {
+    NSMutableDictionary *defaults = [NSMutableDictionary dictionary];
+    [defaults addEntriesFromDictionary:[NSDictionary dictionaryWithContentsOfFile:tweakPreferencePath]];
+    [defaults setObject:value forKey:specifier.properties[@"key"]];
+    [defaults writeToFile:tweakPreferencePath atomically:YES];
+    CFStringRef toPost = (__bridge CFStringRef)specifier.properties[@"PostNotification"];
+    if(toPost) CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), toPost, NULL, NULL, YES);
+}
 
-/*
- Want a tint color?
- */
  -(BOOL) tintSwitches {return false;}
  -(UIColor*) tintColor{ return [UIColor colorWithRed:127.0f/255.0f green:71.0f/255.0f blue:221.0f/255.0f alpha:1.0];}
  

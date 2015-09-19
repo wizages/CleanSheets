@@ -21,6 +21,7 @@ static bool isActivity = false; // Determines if the alert is an activity alert
 static NSString *activityItem = @""; //Stores the first or secound activity item
 static bool seperators = true;
 static bool enabled = true;
+static bool doWork = true;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 * Hook into UIAlertControllerVisualStyle																				 *
@@ -49,6 +50,11 @@ return %orig;
 }
 */
 
+-(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
+	doWork = true;
+	return %orig;
+}
+
 /*
 *	If the menu was supposed to be an actionsheet, it will change it to an alert
 * 	and tell the system to use the correct size for an alert.
@@ -56,13 +62,19 @@ return %orig;
 *	Note: If it is an activity it should ignore this and follow what is defined below.
 */
 -(long long)preferredStyle {
-	if (!isActivity && enabled)
+	if (!isActivity 
+	 && enabled)
 	{
 		fullsizeActivity = false;
 		return 1;
 	}
+	else if (doWork 
+		  && enabled 
+		  && UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad)
+	{
+		return 1;
+	}
 	else{
-		%orig;
 		return %orig;
 	}
 }
@@ -71,11 +83,11 @@ return %orig;
 *	This changes the size of the alert to be the correct size. (Add switch here to make all alerts long)
 */
 -(id)visualStyleForAlertControllerStyle:(long long)arg1 traitCollection:(id)arg2 descriptor:(id)arg3{
-	if (fullsizeActivity && enabled)
+	if (fullsizeActivity 
+	 && enabled)
 	{
 	arg1 = 0;
 	}
-	%orig;
 	return %orig;
 }
 
@@ -86,7 +98,6 @@ return %orig;
 	if(enabled)
 		return TRUE;
 	else{
-		%orig;
 		return %orig;
 	}
 }
@@ -110,7 +121,6 @@ return %orig;
 	if (enabled)
 		return seperators;
 	else{
-		%orig;
 		return %orig;
 	}
 }
@@ -132,7 +142,6 @@ return %orig;
 -(id)initWithActivityItems:(NSArray *)arg1 applicationActivities:(NSArray *)arg2 
 {
 	activityItem = @"";
-	%orig;
 	if(arg1.count >= 1)
 	{
 		activityItem = [arg1[0] description];
@@ -157,32 +166,38 @@ return %orig;
 *	Note: Since the photos app uses a special activity controller we dont touch it.
 */
 -(UIAlertController *)activityAlertController {
-	if (enabled){
+	if (enabled 
+	 && UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad){
 	fullsizeActivity = true;
-	%orig;
 	UIAlertController *alert = %orig;
 	isActivity = true;
-	if ([[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.mobileslideshow"])
+	NSString *bundleName = [[NSBundle mainBundle] bundleIdentifier];
+	if ([bundleName isEqualToString:@"com.apple.mobileslideshow"] 
+	 || [bundleName isEqualToString:@"com.apple.camera"]
+	 || [bundleName isEqualToString:@"com.goldsman.photoquilt"]
+	 || [bundleName isEqualToString:@"com.apple.podcasts"])
 	{
-		//Do nothing for apples photo app
+		isActivity = false;
 	}
 	else if ([alert.parentViewController isKindOfClass:[UIActivityViewController class]])
 	{
+		doWork = false;
 		[alert setPreferredStyle: 1];
 	}
-	else if (alert.parentViewController == nil 
-		  && ( [activityItem rangeOfString:@"ImageActivityItem"].location != NSNotFound 
-		  	|| [activityItem rangeOfString:@"UIActivityItem"].location != NSNotFound ) ){
+	else if ( [activityItem rangeOfString:@"ImageActivityItem"].location != NSNotFound 
+		   || [activityItem rangeOfString:@"UIActivityItem"].location != NSNotFound 
+		   || [activityItem rangeOfString:@"WebURLActivityItemProvider"].location != NSNotFound  ){
+		doWork = false;
 		[alert setPreferredStyle: 0];
 	}
 	else{
+		doWork = false;
 		[alert setPreferredStyle: 1];
 	}
 	isActivity = false;
 	return alert;
 	}
 	else{
-	%orig;
 	return %orig;
 	}
 }

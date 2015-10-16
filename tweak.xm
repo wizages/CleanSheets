@@ -21,6 +21,7 @@ static bool isActivity = false; // Determines if the alert is an activity alert
 static NSString *activityItem = @""; //Stores the first or secound activity item
 static bool seperators = true;
 static bool enabled = true;
+static int i = 0;
 static bool doWork = true;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -84,10 +85,17 @@ return %orig;
 */
 -(id)visualStyleForAlertControllerStyle:(long long)arg1 traitCollection:(id)arg2 descriptor:(id)arg3{
 	if (fullsizeActivity 
-	 && enabled)
+	 && enabled
+	 && kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_9_0)
 	{
 	arg1 = 0;
 	}
+	else if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_9_0 && enabled && UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad){
+		if (i == 5){
+			//arg1 = 0;
+		}
+		i++;
+	} 
 	return %orig;
 }
 
@@ -141,6 +149,10 @@ return %orig;
 */
 -(id)initWithActivityItems:(NSArray *)arg1 applicationActivities:(NSArray *)arg2 
 {
+	isActivity = true;
+	if (i >= 7){
+		i = 0;
+	}
 	activityItem = @"";
 	if(arg1.count >= 1)
 	{
@@ -166,11 +178,11 @@ return %orig;
 *	Note: Since the photos app uses a special activity controller we dont touch it.
 */
 -(UIAlertController *)activityAlertController {
-	if (enabled 
-	 && UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad){
+	if (enabled && UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad){
 	fullsizeActivity = true;
-	UIAlertController *alert = %orig;
 	isActivity = true;
+
+	UIAlertController *alert = %orig;
 	NSString *bundleName = [[NSBundle mainBundle] bundleIdentifier];
 	if ([bundleName isEqualToString:@"com.apple.mobileslideshow"] 
 	 || [bundleName isEqualToString:@"com.apple.camera"]

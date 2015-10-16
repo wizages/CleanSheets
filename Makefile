@@ -7,7 +7,7 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 
 CleanSheets_FRAMEWORKS= UIKIT
 
-SUBPROJECTS += pref
+SUBPROJECTS += cleansheets
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
 after-install::

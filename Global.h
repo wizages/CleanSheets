@@ -13,8 +13,28 @@
 *   See the License for the specific language governing permissions and
 *   limitations under the License.
 */
+#ifndef kCFCoreFoundationVersionNumber_iOS_9_0
+#define kCFCoreFoundationVersionNumber_iOS_9_0 1240.10
+#endif
+
 @interface UIAlertController (UIAlertController)
 
 -(void)setPreferredStyle:(long long)arg1 ;
 
+@end
+
+@interface _UIDimmingKnockoutBackdropView : UIView {
+
+	//_UIBackdropView* backdropView;
+	UIView* dimmingKnockoutView;
+
+}
+@property (nonatomic, retain) UIView* dimmingKnockoutView;
+@property (assign) double cornerRadius; 
+-(void)dealloc;
+-(double)cornerRadius;
+-(void)setCornerRadius:(double)arg1 ;
+-(id)initWithStyle:(long long)arg1 ;
+-(id)_filterForBackdropStyle:(long long)arg1 ;
+-(id)_dimmingKnockoutBackgroundColorForBackdropStyle:(long long)arg1 ;
 @end

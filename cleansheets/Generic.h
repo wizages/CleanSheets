@@ -1,3 +1,15 @@
+#define TweakPreferencePath @"/var/mobile/Library/Preferences/com.wizages.cleansheets.plist"
+#define LCL(str) [self localizedString:str]
+
+@interface PSListController (fixes)
+- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation;
+-(id)bundle;
+@end
+
+@interface UIImage (ios7)
++ (UIImage *)imageNamed:(NSString *)named inBundle:(NSBundle *)bundle;
+@end
+
 @implementation UIImage (Colored)
 
 - (UIImage *)changeImageColor:(UIColor *)color {
@@ -31,6 +43,37 @@
     
     //return the color-burned image
     return coloredImg;
+}
+
+@end
+
+@implementation PSListController (Fix)
+
+-(id) readPreferenceValue:(PSSpecifier*)specifier {
+    NSDictionary *TweakSettings = [NSDictionary dictionaryWithContentsOfFile:TweakPreferencePath];
+    if (!TweakSettings[specifier.properties[@"key"]]) {
+        return specifier.properties[@"default"];
+    }
+    return TweakSettings[specifier.properties[@"key"]];
+}
+ 
+-(void) setPreferenceValue:(id)value specifier:(PSSpecifier*)specifier {
+    NSMutableDictionary *defaults = [NSMutableDictionary dictionary];
+    [defaults addEntriesFromDictionary:[NSDictionary dictionaryWithContentsOfFile:TweakPreferencePath]];
+    HBLogDebug(@"MEH");
+    if ([specifier.properties[@"key"] isEqualToString:@"customFill"])
+    {
+        HBLogDebug(@"HIT ME BABY");
+    }
+    if (specifier.properties[@"key"] == nil)
+    {
+        HBLogDebug(@"Error : Key is nil show specifier ");
+        HBLogDebug(@"%@", specifier);
+    }
+    [defaults setObject:value forKey:specifier.properties[@"key"]];
+    [defaults writeToFile:TweakPreferencePath atomically:YES];
+    CFStringRef toPost = (CFStringRef)specifier.properties[@"PostNotification"];
+    if(toPost) CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), toPost, NULL, NULL, YES);
 }
 
 @end

@@ -6,6 +6,7 @@ CleanSheets_FILES = tweak.xm
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 CleanSheets_FRAMEWORKS= UIKIT
+SHARED_CFLAGS = -fobjc-arc
 
 SUBPROJECTS += cleansheets
 include $(THEOS_MAKE_PATH)/aggregate.mk

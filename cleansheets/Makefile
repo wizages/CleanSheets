@@ -1,7 +1,7 @@
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = CleanSheets
-CleanSheets_FILES = cleansheetsRootListController.m
+CleanSheets_FILES = cleansheetsRootListController.m SKPersonCell.m
 CleanSheets_INSTALL_PATH = /Library/PreferenceBundles
 CleanSheets_FRAMEWORKS = UIKit Social
 CleanSheets_PRIVATE_FRAMEWORKS = Preferences

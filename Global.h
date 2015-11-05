@@ -23,18 +23,6 @@
 
 @end
 
-@interface _UIDimmingKnockoutBackdropView : UIView {
-
-	//_UIBackdropView* backdropView;
-	UIView* dimmingKnockoutView;
-
-}
-@property (nonatomic, retain) UIView* dimmingKnockoutView;
-@property (assign) double cornerRadius; 
--(void)dealloc;
--(double)cornerRadius;
--(void)setCornerRadius:(double)arg1 ;
--(id)initWithStyle:(long long)arg1 ;
--(id)_filterForBackdropStyle:(long long)arg1 ;
--(id)_dimmingKnockoutBackgroundColorForBackdropStyle:(long long)arg1 ;
+@interface _UIModalItemContentView : UIView
+@property (nonatomic, readonly) UIView *accessoryViewControllerContrainerView;
 @end

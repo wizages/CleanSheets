@@ -14,94 +14,122 @@
 *	limitations under the License.
 */
 
+#import <objc/runtime.h>
+
 #import "Global.h"
 
-static bool fullsizeActivity = false; // Deteremine if they need fullsize or not
-static bool isActivity = false; // Determines if the alert is an activity alert
-static NSString *activityItem = @""; //Stores the first or secound activity item
 static bool seperators = true;
 static bool enabled = true;
-static bool doWork = true;
 
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* Hook into UIAlertControllerVisualStyle																				 *
-* Header url: http://developer.limneos.net/?ios=8.0&framework=UIKit.framework&header=UIAlertController.h				 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+@interface _UIAlertControllerShadowedScrollView : UIScrollView
+@end
+
+
+@interface UIView (ViewHierarchyLogging)
+- (void)logViewHierarchy;
+@end
+
+@interface CALayer (CALayersHierarchy)
+-(void)logLayerHierarchy;
+@end
+
+@implementation CALayer (CALayersHierarchy)
+-(void)logLayerHierarchy
+{
+	CGRect screenRect = [[UIScreen mainScreen] bounds];
+	CGFloat screenWidth = screenRect.size.width;
+	for (CALayer *layer in self.sublayers)
+	{
+		[layer logLayerHierarchy];
+	}
+	self.frame = CGRectMake(self.frame.origin.x,0, screenWidth, self.frame.size.height);
+}
+@end
+
+
+// UIView+HierarchyLogging.m
+@implementation UIView (ViewHierarchyLogging)
+- (void)logViewHierarchy
+{
+	CGRect screenRect = [[UIScreen mainScreen] bounds];
+	CGFloat screenWidth = screenRect.size.width;
+
+    //self.autoresizingMask = UIViewAutoresizingWidth;
+    
+    //[self setBackgroundColor:test[i]];
+
+    for (UIView *subview in self.subviews)
+    {
+        [subview logViewHierarchy];
+        
+    }
+    [self setFrame:CGRectMake(self.frame.origin.x, 0, screenWidth, self.frame.size.height)];
+    //self.layer.frame = CGRectMake(0,self.frame.origin.y, screenWidth, self.frame.size.height);
+    //self.clipsToBounds = NO;
+}
+@end
+
+
+@interface UIAlertControllerVisualStyle : NSObject
+-(UIEdgeInsets)contentInsets;
+@end
+@interface UIAlertController (test)
+@property (nonatomic, retain) UIAlertControllerVisualStyle *_visualStyle;
+
+@end
+
 %hook UIAlertController
 
-/*
-*	This will tell the system that it needs to resize for an activity or not.
-*	Note: Removed or now because it was causing wrong resizing on some alerts
-*		  we will use this later to change the look of alerts hence why it is
-*		  staying
-*/
-/*
-+ (id)alertControllerWithTitle:(id)arg1 message:(id)arg2 preferredStyle:(int)arg3 {
-
-if (arg3 == 0)
-{
-	fullsizeActivity= true;
-}
-else {
-	fullsizeActivity = false;
-}
-%orig;
-return %orig;
-}
-*/
-
--(id)initWithNibName:(id)arg1 bundle:(id)arg2 {
-	doWork = true;
-	return %orig;
-}
-
-/*
-*	If the menu was supposed to be an actionsheet, it will change it to an alert
-* 	and tell the system to use the correct size for an alert.
-*
-*	Note: If it is an activity it should ignore this and follow what is defined below.
-*/
--(long long)preferredStyle {
-	if (!isActivity 
-	 && enabled)
-	{
-		fullsizeActivity = false;
-		return 1;
-	}
-	else if (doWork 
-		  && enabled )
-	{
-		return 1;
-	}
-	else{
-		return %orig;
-	}
-}
-
-/*
-*	This changes the size of the alert to be the correct size. (Add switch here to make all alerts long)
-*/
 -(id)visualStyleForAlertControllerStyle:(long long)arg1 traitCollection:(id)arg2 descriptor:(id)arg3{
-	if (fullsizeActivity 
-	 && enabled
-	 && kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_9_0)
-	{
 	arg1 = 0;
-	}
 	return %orig;
 }
 
-/*
-*	Enables background touches to dismass the sheet.
-*/
--(BOOL)_canDismissWithGestureRecognizer {
-	if(enabled)
-		return TRUE;
-	else{
-		return %orig;
-	}
+-(int) preferredStyle 
+{
+	return 1;
+	//return %orig;
 }
 
+- (BOOL)_canDismissWithGestureRecognizer
+{
+	return true;
+}
+
+- (void)viewDidLayoutSubviews
+{
+	CGRect screenRect = [[UIScreen mainScreen] bounds];
+	CGFloat screenWidth = screenRect.size.width;
+	//[self.view logViewHierarchy];
+	%orig;
+
+	self.view.frame = CGRectMake(self.view.frame.origin.x,0, screenWidth, self.view.frame.size.height);
+	
+}
+
+- (void)viewWillAppear:(BOOL)arg1{
+	%orig;
+	
+	CGFloat conRadius = 10.0f;
+	//HBLogDebug(@"View location: %@", self.view);
+	for (UIView *subview in [self.view subviews])
+	{
+			for (UIView *subview2 in [subview subviews])
+			{
+				[subview2.layer setCornerRadius:conRadius];
+					for (UIView *subview3 in [subview2 subviews])
+					{	
+						[subview3.layer setCornerRadius:conRadius];
+						for (UIView *subview4 in [subview3 subviews])
+						{
+							[subview4.layer setCornerRadius:conRadius];
+						}
+						
+					}
+			}
+	}
+	
+}
 
 %end
 
@@ -112,12 +140,6 @@ return %orig;
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 %hook UIAlertControllerVisualStyle
 
-- (float)backgroundCornerRadius {
-	return 15.0f;
-}
-/*
-*	Hides seperators for all the UIAlerts
-*/
 -(bool) hideActionSeparators{
 	//bool seperators_hide = (bool) [CleanSheets loadSettings][@"seperators_hide"];
 	//HBLogDebug(@"%ld", (long) seperators_hide);
@@ -130,82 +152,25 @@ return %orig;
 
 %end
 
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* Hook into UIActivityViewController																					 *
-* Header url: http://developer.limneos.net/?ios=8.0&framework=UIKit.framework&header=UIActivityViewController.h 		 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 %hook UIActivityViewController
 
-/*
-*	Gets array count of UIActivity then takes a look at the first entry and secound
-*	if it exists. If it exists it checks to see if it has a memory address in the 
-*	description. If it does then it will move on and store that activity name.
-*/
--(id)initWithActivityItems:(NSArray *)arg1 applicationActivities:(NSArray *)arg2 
+- (void)viewDidLayoutSubviews
 {
-	activityItem = @"";
-	if(arg1.count >= 1)
-	{
-		activityItem = [arg1[0] description];
-		if ([activityItem rangeOfString:@"0x"].location == NSNotFound 
-		 && arg1.count > 1)
-		{
-			activityItem = [arg1[1] description];
-		}
-	}
-	return %orig;
+	
+	
+	CGRect screenRect = [[UIScreen mainScreen] bounds];
+	CGFloat screenWidth = screenRect.size.width;
+	CGFloat screenHeight = screenRect.size.height;
+	//[self.view logViewHierarchy];
+	%orig;
+
+	self.view.frame = CGRectMake(self.view.frame.origin.x, (screenHeight-self.view.frame.size.height)/2 , screenWidth, self.view.frame.size.height);
+	//
+	//[self.view logViewHierarchy];
+	//[self.view.layer logLayerHierarchy];
 }
-
-/*
-*	Once the activityname is ready to be passed in we will then turn on two switches
-* 	to enable special themeing for the activity controller. After that we look into
-*	see if the first or secound item of the activity items is equal to a UI or Image
-* 	activity item. These items were causing crashes in apps so we had to just tell
-* 	the tweak to not change there style which magically fixes everything. My theory
-* 	behind why it is broken is because someone wrote a library and some companies
-* 	use the same library and they original lib writer didnt know how to code 
-*	Activity Views properly.... (Because all of apples apps are just fine)
-*	Note: Since the photos app uses a special activity controller we dont touch it.
-*/
--(UIAlertController *)activityAlertController {
-	if (enabled){
-	fullsizeActivity = true;
-	isActivity = true;
-
-	UIAlertController *alert = %orig;
-	NSString *bundleName = [[NSBundle mainBundle] bundleIdentifier];
-	if ([bundleName isEqualToString:@"com.apple.mobileslideshow"] 
-	 || [bundleName isEqualToString:@"com.apple.camera"]
-	 || [bundleName isEqualToString:@"com.goldsman.photoquilt"]
-	 || [bundleName isEqualToString:@"com.apple.podcasts"])
-	{
-		isActivity = false;
-	}
-	else if ([alert.parentViewController isKindOfClass:[UIActivityViewController class]])
-	{
-		doWork = false;
-		[alert setPreferredStyle: 1];
-	}
-	else if ( [activityItem rangeOfString:@"ImageActivityItem"].location != NSNotFound 
-		   || [activityItem rangeOfString:@"UIActivityItem"].location != NSNotFound 
-		   || [activityItem rangeOfString:@"WebURLActivityItemProvider"].location != NSNotFound  ){
-		doWork = false;
-		[alert setPreferredStyle: 0];
-	}
-	else{
-		doWork = false;
-		[alert setPreferredStyle: 1];
-	}
-	isActivity = false;
-	return alert;
-	}
-	else{
-	return %orig;
-	}
-}
-
 %end
+
 
 static void loadPrefs()
 {

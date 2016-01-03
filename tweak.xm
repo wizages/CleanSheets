@@ -14,106 +14,59 @@
 *	limitations under the License.
 */
 
-#import <objc/runtime.h>
-
-#import "Global.h"
-
 static bool seperators = true;
 static bool enabled = true;
+static bool isActivity = false;
+static bool customRadius = true;
+static bool tapDismiss = true;
 
-@interface _UIAlertControllerShadowedScrollView : UIScrollView
-@end
-
-
-@interface UIView (ViewHierarchyLogging)
-- (void)logViewHierarchy;
-@end
-
-@interface CALayer (CALayersHierarchy)
--(void)logLayerHierarchy;
-@end
-
-@implementation CALayer (CALayersHierarchy)
--(void)logLayerHierarchy
-{
-	CGRect screenRect = [[UIScreen mainScreen] bounds];
-	CGFloat screenWidth = screenRect.size.width;
-	for (CALayer *layer in self.sublayers)
-	{
-		[layer logLayerHierarchy];
-	}
-	self.frame = CGRectMake(self.frame.origin.x,0, screenWidth, self.frame.size.height);
-}
-@end
-
-
-// UIView+HierarchyLogging.m
-@implementation UIView (ViewHierarchyLogging)
-- (void)logViewHierarchy
-{
-	CGRect screenRect = [[UIScreen mainScreen] bounds];
-	CGFloat screenWidth = screenRect.size.width;
-
-    //self.autoresizingMask = UIViewAutoresizingWidth;
-    
-    //[self setBackgroundColor:test[i]];
-
-    for (UIView *subview in self.subviews)
-    {
-        [subview logViewHierarchy];
-        
-    }
-    [self setFrame:CGRectMake(self.frame.origin.x, 0, screenWidth, self.frame.size.height)];
-    //self.layer.frame = CGRectMake(0,self.frame.origin.y, screenWidth, self.frame.size.height);
-    //self.clipsToBounds = NO;
-}
-@end
-
-
-@interface UIAlertControllerVisualStyle : NSObject
--(UIEdgeInsets)contentInsets;
-@end
-@interface UIAlertController (test)
-@property (nonatomic, retain) UIAlertControllerVisualStyle *_visualStyle;
-
-@end
-
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+* Hook into UIAlertController																			 		     *
+* Header url: https://github.com/nst/iOS-Runtime-Headers/blob/master/Frameworks/UIKit.framework/UIAlertController.h  *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 %hook UIAlertController
 
 -(id)visualStyleForAlertControllerStyle:(long long)arg1 traitCollection:(id)arg2 descriptor:(id)arg3{
-	arg1 = 0;
+	if (isActivity && enabled)
+		arg1 = 0;
 	return %orig;
 }
 
 -(int) preferredStyle 
 {
-	return 1;
-	//return %orig;
+	if(enabled)
+		return 1;
+	else
+		return %orig;
 }
 
 - (BOOL)_canDismissWithGestureRecognizer
 {
-	return true;
+	if(enabled && tapDismiss)
+		return true;
+	else
+		return %orig;
 }
 
 - (void)viewDidLayoutSubviews
 {
-	CGRect screenRect = [[UIScreen mainScreen] bounds];
-	CGFloat screenWidth = screenRect.size.width;
+	
 	//[self.view logViewHierarchy];
 	%orig;
-
-	self.view.frame = CGRectMake(self.view.frame.origin.x,0, screenWidth, self.view.frame.size.height);
-	
+	if(enabled){
+		CGRect screenRect = [[UIScreen mainScreen] bounds];
+		CGFloat screenWidth = screenRect.size.width;
+		if (isActivity)
+			self.view.frame = CGRectMake(self.view.frame.origin.x,0, screenWidth, self.view.frame.size.height);
+	}
 }
 
 - (void)viewWillAppear:(BOOL)arg1{
 	%orig;
-	
-	CGFloat conRadius = 10.0f;
-	//HBLogDebug(@"View location: %@", self.view);
-	for (UIView *subview in [self.view subviews])
-	{
+	if (enabled && customRadius){
+		CGFloat conRadius = 10.0f;
+		for (UIView *subview in [self.view subviews])
+		{
 			for (UIView *subview2 in [subview subviews])
 			{
 				[subview2.layer setCornerRadius:conRadius];
@@ -127,22 +80,22 @@ static bool enabled = true;
 						
 					}
 			}
+		}
 	}
+	
 	
 }
 
 %end
 
 
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* Hook into UIAlertControllerVisualStyle																				 *
-* Header url: http://developer.limneos.net/?ios=8.0&framework=UIKit.framework&header=UIAlertControllerVisualStyle.h 	 *
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+* Hook into UIAlertControllerVisualStyle																			 		   *
+* Header url: https://github.com/nst/iOS-Runtime-Headers/blob/master/Frameworks/UIKit.framework/UIAlertControllerVisualStyle.h *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 %hook UIAlertControllerVisualStyle
 
 -(bool) hideActionSeparators{
-	//bool seperators_hide = (bool) [CleanSheets loadSettings][@"seperators_hide"];
-	//HBLogDebug(@"%ld", (long) seperators_hide);
 	if (enabled)
 		return seperators;
 	else{
@@ -152,7 +105,24 @@ static bool enabled = true;
 
 %end
 
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+* Hook into UIActivityViewController																			 		   *
+* Header url: https://github.com/nst/iOS-Runtime-Headers/blob/master/Frameworks/UIKit.framework/UIActivityViewController.h *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 %hook UIActivityViewController
+
+- (void)viewDidLoad
+{
+	isActivity = true;
+	%orig;
+}
+
+- (void)viewWillDisappear:(BOOL)arg1
+{
+	isActivity = false;
+	%orig;
+}
 
 - (void)viewDidLayoutSubviews
 {
@@ -161,13 +131,9 @@ static bool enabled = true;
 	CGRect screenRect = [[UIScreen mainScreen] bounds];
 	CGFloat screenWidth = screenRect.size.width;
 	CGFloat screenHeight = screenRect.size.height;
-	//[self.view logViewHierarchy];
 	%orig;
-
-	self.view.frame = CGRectMake(self.view.frame.origin.x, (screenHeight-self.view.frame.size.height)/2 , screenWidth, self.view.frame.size.height);
-	//
-	//[self.view logViewHierarchy];
-	//[self.view.layer logLayerHierarchy];
+	if(enabled)
+		self.view.frame = CGRectMake(self.view.frame.origin.x, (screenHeight-self.view.frame.size.height)/2 , screenWidth, self.view.frame.size.height);
 }
 %end
 
